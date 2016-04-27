@@ -2,8 +2,8 @@
 
 package StaticVolt;
 
-use strict;
-use warnings;
+use Moo;
+use namespace::autoclean;
 
 use Cwd qw( getcwd );
 use File::Copy qw( copy );
@@ -14,7 +14,7 @@ use FindBin;
 use Template;
 use YAML;
 
-use base qw( StaticVolt::Convertor );
+extends qw( StaticVolt::Convertor );
 
 use StaticVolt::Convertor::Markdown;
 use StaticVolt::Convertor::Textile;

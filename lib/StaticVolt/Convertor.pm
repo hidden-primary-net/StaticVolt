@@ -2,34 +2,60 @@
 
 package StaticVolt::Convertor;
 
-use strict;
-use warnings;
+use Moo;
+use Carp;
+use Scalar::Util;
+use namespace::autoclean;
 
-my %convertor;
+has q(convertor) => (
+    is  => q(ro),
+    isa => sub {
+        die q(Converter must be a hash reference)
+            unless ref $_ eq q(HASH);
+    },
+    lazy    => 1,
+    builder => q(_build_convertor),
+    writer  => q(_set_convertor),
+);
 
 sub has_convertor {
-    my ( $self, $extension ) = @_;
+    my ($self, $extension) = @_;
 
-    if ( exists $convertor{$extension} ) {
-        return 1;
-    }
+    return $self->convertor->{$extension}
+        if exists $self->convertor->{$extension};
     return;
-}
+} ## end sub has_convertor
 
 sub convert {
-    my ( $self, $content, $extension ) = @_;
+    my ($self, $content, $extension) = @_;
 
+    my $converter = $self->has_convertor($extension);
+    croak(qq(File extension "$extension" wasn't registered))
+        unless $converter;
+
+    eval qq(require $converter);
+    if (my $e = $@) {
+        croak(qq(Unable to load converter "$converter": $e));
+    }
     no strict 'refs';
-    return &{"${convertor{$extension}}::convert"}($content);
-}
+    &{"$converter::convert"}($content);
+} ## end sub convert
 
 sub register {
-    my ( $class, @extensions ) = @_;
+    my ($class, @extensions) = @_;
 
-    for my $extension (@extensions) {
-        $convertor{$extension} = $class;
+    $class = ref $class
+        if blessed($class);
+
+    my %converters = $self->convertor;
+    for (@extensions) {
+        $convertors{$extension} = $class;
     }
-}
+    $self->_set_convertor(\%converters);
+    return scalar keys %converters;
+} ## end sub register
+
+sub _build_convertor { {} }
 
 1;
 
